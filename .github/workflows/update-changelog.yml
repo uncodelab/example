@@ -83,17 +83,20 @@ jobs:
           OUTPUT=""
           for type in feat fix docs style refactor perf test chore; do
             if [ -n "${changes[$type]}" ]; then
-              OUTPUT+="### ${categories[$type]}\n${changes[$type]}"
+              # Add category with a single trailing newline
+              OUTPUT+="### ${categories[$type]}\n${changes[$type]}\n"
             fi
           done
           if [ -n "$uncategorized_changes" ]; then
-            OUTPUT+="### Uncategorized\n${uncategorized_changes}"
+            # Add uncategorized with a single trailing newline
+            OUTPUT+="### Uncategorized\n${uncategorized_changes}\n"
           fi
 
           if [ -z "$OUTPUT" ]; then
             OUTPUT="### No changes\n"
           fi
 
+          # Remove extra newlines, ensure single newline between sections
           OUTPUT=$(echo -e "$OUTPUT" | sed -E '/^$/N;/^\n$/D' | sed -E 's/^\n+//;s/\n+$//')
 
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
@@ -112,11 +115,8 @@ jobs:
             exit 1
           fi
           if [ -f CHANGELOG.md ]; then
-            # Clean existing content: remove header and collapse multiple blank lines
-            EXISTING_CONTENT=$(cat CHANGELOG.md | sed -E '/^# Changelog$/d' | sed -E '/^$/N;/^\n$/D' | sed -E 's/^\n+//;s/\n+$//' || {
-              echo "Error: Failed to process CHANGELOG.md" >&2
-              exit 1
-            })
+            # Clean existing content: remove header and normalize newlines
+            EXISTING_CONTENT=$(cat CHANGELOG.md | sed -E '/^# Changelog$/d' | sed -E '/^$/N;/^\n$/D' | sed -E 's/^\n+//;s/\n+$//')
           else
             EXISTING_CONTENT=""
           fi
@@ -128,8 +128,8 @@ jobs:
             echo ""
             echo -e "${{ steps.changelog.outputs.changelog }}"
             if [ -n "$EXISTING_CONTENT" ]; then
-              echo ""
-              echo "$EXISTING_CONTENT"
+              echo ""  # Single newline before existing content
+              echo -e "$EXISTING_CONTENT"
             fi
           } > CHANGELOG.md || {
             echo "Error: Failed to write CHANGELOG.md" >&2
