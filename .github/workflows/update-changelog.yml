@@ -124,7 +124,6 @@ jobs:
             echo ""
             echo -e "${{ steps.changelog.outputs.changelog }}"
             if [ -n "$EXISTING_CONTENT" ]; then
-              echo ""
               echo -e "$EXISTING_CONTENT"
             fi
           } > CHANGELOG.md || {
