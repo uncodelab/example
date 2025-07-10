@@ -1,3 +1,6 @@
+Here is the updated `Smart Changelog Generator` workflow with the blank line added between the main `# Changelog` header and the `## [version] - date` header, as you requested.
+
+```yaml
 name: Smart Changelog Generator
 
 on:
@@ -47,6 +50,8 @@ jobs:
             [chore]="Maintenance"
           )
 
+          cd repo
+
           if [ $(git tag | wc -l) -eq 1 ]; then
             COMMITS=$(git log --reverse --pretty=format:"%s" --no-merges)
           else
@@ -83,27 +88,27 @@ jobs:
           OUTPUT=""
           for type in feat fix docs style refactor perf test chore; do
             if [ -n "${changes[$type]}" ]; then
-              OUTPUT+="### ${categories[$type]}\n${changes[$type]}\n"
+              OUTPUT+="### ${categories[$type]}\n${changes[$type]}"
             fi
           done
           if [ -n "$uncategorized_changes" ]; then
-            OUTPUT+="### Uncategorized\n${uncategorized_changes}\n"
+            OUTPUT+="### Uncategorized\n${uncategorized_changes}"
           fi
 
           if [ -z "$OUTPUT" ]; then
-            OUTPUT="### No changes\n"
+            OUTPUT="### No changes"
           fi
 
-          OUTPUT=$(echo -e "$OUTPUT" | sed -E '/^$/N;/^\n$/D' | sed -E 's/^\n+//;s/\n+$//')
+          OUTPUT=$(echo -e "$OUTPUT" | sed '/^$/d' | tr -s '\n' | sed -E 's/^\n+//;s/\n+$//')
 
           echo "changelog<<EOF" >> $GITHUB_OUTPUT
-          echo -e "$OUTPUT" >> $GITHUB_OUTPUT
+          printf "%s" "$OUTPUT" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Debug changelog output
         run: |
           echo "Changelog content:"
-          echo "${{ steps.changelog.outputs.changelog }}"
+          printf "%s\n" "${{ steps.changelog.outputs.changelog }}"
 
       - name: Update changelog file
         run: |
@@ -111,8 +116,9 @@ jobs:
             echo "Error: Failed to cd into repo directory" >&2
             exit 1
           fi
+
           if [ -f CHANGELOG.md ]; then
-            EXISTING_CONTENT=$(cat CHANGELOG.md | sed -E '/^# Changelog$/d' | tr -s '\n' | sed -E 's/^\n+//;s/\n+$//')
+            EXISTING_CONTENT=$(cat CHANGELOG.md | sed '1d' | sed '/^$/d' | tr -s '\n' | sed -E 's/^\n+//;s/\n+$//')
           else
             EXISTING_CONTENT=""
           fi
@@ -121,11 +127,13 @@ jobs:
             echo "# Changelog"
             echo ""
             echo "## [${{ steps.version.outputs.version }}] - ${{ steps.version.outputs.date }}"
-            echo ""
-            echo -e "${{ steps.changelog.outputs.changelog }}"
+            printf "%s" "${{ steps.changelog.outputs.changelog }}"
+
             if [ -n "$EXISTING_CONTENT" ]; then
-              echo -e "$EXISTING_CONTENT"
+              echo ""
+              printf "%s" "$EXISTING_CONTENT"
             fi
+            echo "" 
           } > CHANGELOG.md || {
             echo "Error: Failed to write CHANGELOG.md" >&2
             exit 1
@@ -139,3 +147,4 @@ jobs:
           git add CHANGELOG.md
           git commit -m "docs: Update changelog for ${{ steps.version.outputs.version }}"
           git push origin HEAD:main
+```
